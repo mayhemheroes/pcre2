@@ -1,0 +1,4 @@
+project: PROJECT
+target: pcre2_fuzzer
+cmds:
+- cmd: /out/pcre2_fuzzer
