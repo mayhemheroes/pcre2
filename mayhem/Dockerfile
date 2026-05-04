@@ -6,6 +6,7 @@ RUN apt-get update && \
         make \
         autoconf \
         automake \
+        autoconf-archive \
         libtool \
         pkg-config
 
@@ -13,7 +14,8 @@ COPY . /src/pcre2
 WORKDIR /src/pcre2
 RUN rm -rf mayhem
 
-RUN libtoolize -c -f && \
+RUN mkdir -p m4 && \
+    libtoolize -c -f && \
     rm -rf autom4te.cache Makefile.in aclocal.m4 && \
     aclocal --force -I m4 && \
     autoconf -f && \
