@@ -6,7 +6,8 @@ RUN apt-get update && \
         make \
         autoconf \
         automake \
-        libtool
+        libtool \
+        pkg-config
 
 COPY . /src/pcre2
 WORKDIR /src/pcre2
