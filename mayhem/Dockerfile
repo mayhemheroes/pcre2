@@ -1,27 +1,27 @@
-# Copyright 2016 Google Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-################################################################################
+FROM --platform=linux/amd64 ubuntu:22.04 AS builder
 
-FROM gcr.io/oss-fuzz-base/base-builder
-RUN apt-get update && apt-get install -y make autoconf automake libtool subversion
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        clang \
+        make \
+        autoconf \
+        automake \
+        libtool
 
-COPY . pcre2
-RUN rm -rf pcre2/mayhem
-WORKDIR pcre2
-COPY mayhem/build.sh $SRC/
+COPY . /src/pcre2
+WORKDIR /src/pcre2
+RUN rm -rf mayhem
 
-ENV FUZZING_LANGUAGE=c++ SANITIZER=address FUZZING_ENGINE=libfuzzer ARCHITECTURE=x86_64
-RUN compile
-RUN chmod +x /out/pcre2_fuzzer
+RUN ./autogen.sh && \
+    ./configure --enable-fuzz-support --enable-never-backslash-C \
+        --with-match-limit=1000 --with-match-limit-recursion=1000 \
+        CC=clang CXX=clang++ && \
+    make -j$(nproc) all
+
+RUN mkdir -p /out && \
+    clang++ -fsanitize=fuzzer \
+        -o /out/pcre2_fuzzer \
+        .libs/libpcre2-fuzzsupport.a .libs/libpcre2-8.a
+
+FROM --platform=linux/amd64 ubuntu:22.04
+COPY --from=builder /out/pcre2_fuzzer /out/pcre2_fuzzer
